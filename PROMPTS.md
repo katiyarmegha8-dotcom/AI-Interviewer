@@ -105,3 +105,82 @@ opened to verify that the API was functioning.
 The backend changes were then committed and pushed to GitHub.
 
 ---
+## Prompt 3 — Next.js Frontend Implementation
+
+### AI Tool
+
+Cursor Agent
+
+### Prompt
+
+Implement the frontend for the AI Interviewer using the existing Next.js and Tailwind CSS project.
+
+Requirements:
+
+* Build the main frontend experience for the AI Interviewer
+* Create the interview and feedback pages
+* Create reusable layout components
+* Create reusable UI components
+* Maintain a clean and consistent visual design
+* Use the existing Tailwind CSS configuration
+* Follow the existing project structure
+* Keep components modular and reusable
+* Ensure the implementation is responsive
+* Use proper TypeScript and React conventions
+* Avoid unnecessary dependencies
+* Ensure the application can run successfully with the existing project setup
+
+### AI Response / Output
+
+Cursor implemented the requested frontend structure and generated the required pages and reusable components.
+
+The implementation included:
+
+* Updated `frontend/app/page.tsx`
+* Updated `frontend/app/layout.tsx`
+* Updated `frontend/app/globals.css`
+* Added the interview route under `frontend/app/interview/`
+* Added the feedback route under `frontend/app/feedback/`
+* Added `PageContainer` as a reusable layout component
+* Added `SiteHeader` and `SiteFooter` for consistent application layout
+* Added `Button` as a reusable UI component
+* Added `PlaceholderPanel` for the interview interface
+* Updated `tailwind.config.ts`
+
+The frontend dependencies were installed using `npm install`, and the application was successfully started locally using the project's development server.
+
+### Where It Was Used
+
+The generated frontend forms the user-facing layer of the AI Interviewer application.
+
+The interview and feedback routes provide the initial application flow, while the reusable layout and UI components provide a consistent foundation for connecting the frontend with the FastAPI backend and future AI interview functionality.
+
+### Human Review
+
+The generated changes were reviewed in Cursor using the Changes panel and Git diff.
+
+The newly created routes, reusable components, styling changes, TypeScript files and Tailwind configuration were reviewed before committing the implementation.
+
+The frontend was then tested locally by installing the project dependencies and starting the development server with:
+
+`npm install`
+
+`npm run dev`
+
+The application was opened through the local development URL to verify that the frontend loaded successfully.
+
+After local verification, the changes were committed to Git using:
+
+`git commit -m "feat: complete frontend implementation"`
+
+The commit was then pushed to the GitHub repository.
+
+### Vibe Coding Workflow
+
+Cursor Agent was used to generate the initial implementation from the defined requirements. The generated code was then reviewed and tested by the developer before being accepted into the project.
+
+The workflow followed an iterative AI-assisted development process:
+
+**Prompt → AI-generated implementation → Human review → Local testing → Git commit → GitHub push**
+
+This kept the developer responsible for reviewing the generated code and verifying the resulting application rather than treating the AI output as automatically correct.
