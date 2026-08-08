@@ -282,3 +282,97 @@ The workflow followed an iterative AI-assisted development process:
 
 The developer remained responsible for reviewing the generated implementation, verifying the provided data and confirming that the backend tests passed before accepting the changes.
 
+
+
+## Prompt 5 — Session Management Implementation
+
+### AI Tool
+
+Arena Agent
+
+### Prompt
+
+Implement interview session management for the existing AI Interviewer project.
+
+Requirements:
+
+- Use a unique `sessionId` for each interview session
+- Store conversation history
+- Store questions asked
+- Store curriculum days covered
+- Store the candidate profile associated with the session
+- Store interview progress
+- Use an in-memory session manager
+- Keep the implementation modular
+- Reuse the existing candidate and curriculum models and services
+- Preserve the existing project functionality
+- Use appropriate type-safe models and domain-specific exceptions
+- Provide operations for creating, retrieving, updating and removing sessions
+- Handle unknown session IDs appropriately
+- Keep session data isolated between different interview sessions
+- Add automated tests for the session management functionality
+- Do not implement LLM generation, adaptive questioning, scoring or evaluation functionality at this stage
+
+### AI Response / Output
+
+Arena Agent inspected the existing backend architecture and implemented the requested interview session management functionality.
+
+The implementation included:
+
+- Added `backend/app/models/session.py`
+- Added `backend/app/services/session_service.py`
+- Added `backend/tests/test_session.py`
+- Added `SessionNotFoundError` to `backend/app/exceptions.py`
+- Updated `backend/app/models/__init__.py`
+- Updated `backend/app/services/__init__.py`
+
+The session models include:
+
+- `InterviewSession`
+- `ConversationMessage`
+- `QuestionAsked`
+- `InterviewProgress`
+- `InterviewStatus`
+
+The `SessionManager` provides an in-memory session store with session creation, retrieval, updates, completion, removal and clearing operations.
+
+Each session receives a unique UUID-based `sessionId` by default.
+
+The session manager stores the candidate profile, conversation history, questions asked, curriculum days covered and interview progress.
+
+Adding questions automatically tracks the associated curriculum day, while session mutations update the session timestamp.
+
+### Where It Was Used
+
+The session management implementation provides the state-management layer for interview sessions in the AI Interviewer backend.
+
+It maintains the state required to continue an interview session, including the candidate context, conversation history, questions asked, curriculum coverage and current interview progress.
+
+The in-memory design keeps the implementation lightweight and modular while providing a foundation for connecting the interview API and AI functionality in later development.
+
+### Human Review
+
+The generated changes were reviewed in Arena Agent against the existing FastAPI architecture and the requirements for session management.
+
+The newly created session models, session manager service, exception handling, package exports and automated tests were reviewed before accepting the implementation.
+
+The complete backend test suite was executed after implementation.
+
+All **72 automated tests passed successfully**, including:
+
+- 26 existing data model and service tests
+- 46 new session management tests
+
+The tests covered session creation, unique session IDs, candidate association, session retrieval, conversation history, questions asked, curriculum day tracking, interview progress, session completion and removal, error handling and session isolation.
+
+### Vibe Coding Workflow
+
+Arena Agent was used to inspect the existing repository and generate the session management implementation from the defined requirements.
+
+The generated code was then reviewed and tested before being accepted into the project.
+
+The workflow followed an iterative AI-assisted development process:
+
+**Prompt → Repository inspection → AI-generated implementation → Human review → Automated testing**
+
+The implementation was accepted after the complete backend test suite passed successfully.
