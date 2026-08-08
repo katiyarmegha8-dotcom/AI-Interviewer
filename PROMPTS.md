@@ -184,3 +184,101 @@ The workflow followed an iterative AI-assisted development process:
 **Prompt → AI-generated implementation → Human review → Local testing → Git commit → GitHub push**
 
 This kept the developer responsible for reviewing the generated code and verifying the resulting application rather than treating the AI output as automatically correct.
+
+
+## Prompt 4 — Data Models & Services Implementation
+
+### AI Tool
+
+Arena Agent
+
+### Prompt
+
+Implement the data models and reusable data services for the AI Interviewer using the existing FastAPI project and the provided hackathon data.
+
+Requirements:
+
+* Use the provided `curriculum.json` and `candidates.json` files
+* Store the curriculum data under `backend/app/data/curriculum.json`
+* Store the candidate data under `backend/app/data/candidates.json`
+* Create Pydantic models that accurately represent the provided JSON structures
+* Create models for curriculum modules, curriculum days and supported day types
+* Create models for candidates, candidate members, missions and candidate signals
+* Create reusable data-loading functionality for reading and validating JSON files
+* Handle missing files, malformed JSON and validation errors using appropriate exceptions
+* Create a curriculum service for loading and validating curriculum data
+* Create a candidate service for loading candidates and retrieving an individual candidate by ID
+* Handle unknown candidate IDs with an appropriate domain-specific exception
+* Keep data-loading paths configurable where practical to support testing
+* Use caching for static curriculum and candidate data where appropriate
+* Maintain a clean separation between models, services and application logic
+* Update the relevant package exports for the newly created models and services
+* Preserve the existing FastAPI functionality from the previous implementation
+* Do not implement interview execution, LLM orchestration, adaptive questioning, scoring or real-time interview functionality
+* Follow the existing project structure and coding conventions
+* Avoid unnecessary dependencies
+
+### AI Response / Output
+
+Arena Agent inspected the existing repository and implemented the requested data models and reusable services.
+
+The implementation included:
+
+* Added `backend/app/data/curriculum.json`
+* Added `backend/app/data/candidates.json`
+* Added `backend/app/exceptions.py`
+* Added `backend/app/models/curriculum.py`
+* Added `backend/app/models/candidate.py`
+* Added `backend/app/services/data_loader.py`
+* Added `backend/app/services/curriculum_service.py`
+* Added `backend/app/services/candidate_service.py`
+* Updated `backend/app/models/__init__.py`
+* Updated `backend/app/services/__init__.py`
+* Added backend service tests under `backend/tests/test_services.py`
+
+The Pydantic models were created to match the provided curriculum and candidate data structures, including curriculum modules, curriculum days, candidates, missions and candidate signals.
+
+A reusable data loader was implemented to read JSON files and validate them through the corresponding Pydantic models.
+
+Domain-specific exceptions were added for missing files, invalid JSON, validation failures and unknown candidate IDs.
+
+The curriculum and candidate services were implemented with support for cached loading and injectable file paths for testing.
+
+### Where It Was Used
+
+The generated backend implementation provides the data layer for the AI Interviewer application.
+
+The curriculum service provides validated curriculum information, while the candidate service provides access to candidate profiles and individual candidate records.
+
+The reusable data-loading and validation layer provides the foundation for the interview functionality that will be connected in later development.
+
+### Human Review
+
+The generated changes were reviewed in Arena Agent and through the repository changes.
+
+The newly created Pydantic models, data-loading utilities, services, exceptions, test files and package exports were reviewed before accepting the implementation.
+
+The provided curriculum and candidate data were retained as the source data for the application.
+
+The backend test suite was executed after implementation.
+
+All **26 automated tests passed successfully**.
+
+The existing FastAPI health endpoint was also tested and returned a successful response.
+
+After verification, the changes were committed to Git using:
+
+`git commit -m "feat: implement milestone 4 data models and services"`
+
+The commit was then pushed to the GitHub repository.
+
+### Vibe Coding Workflow
+
+Arena Agent was used to generate the initial implementation from the defined requirements and existing project structure. The generated code was then reviewed and tested before being accepted into the project.
+
+The workflow followed an iterative AI-assisted development process:
+
+**Prompt → Repository inspection → AI-generated implementation → Human review → Automated testing → Git commit → GitHub push**
+
+The developer remained responsible for reviewing the generated implementation, verifying the provided data and confirming that the backend tests passed before accepting the changes.
+
