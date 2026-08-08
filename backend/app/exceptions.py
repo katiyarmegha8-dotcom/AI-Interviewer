@@ -33,3 +33,11 @@ class CandidateNotFoundError(Exception):
     def __init__(self, candidate_id: str) -> None:
         self.candidate_id = candidate_id
         super().__init__(f"Candidate not found: {candidate_id}")
+
+
+class SessionNotFoundError(Exception):
+    """Raised when a session ID does not match any active session."""
+
+    def __init__(self, session_id: str) -> None:
+        self.session_id = session_id
+        super().__init__(f"Session not found: {session_id}")

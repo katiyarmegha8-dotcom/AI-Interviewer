@@ -8,6 +8,13 @@ from app.models.candidate import (
 from app.models.common import ErrorResponse, MessageResponse
 from app.models.curriculum import Curriculum, CurriculumDay, DayType, Module
 from app.models.health import HealthResponse
+from app.models.session import (
+    ConversationMessage,
+    InterviewProgress,
+    InterviewSession,
+    InterviewStatus,
+    QuestionAsked,
+)
 
 __all__ = [
     # Candidate models
@@ -26,4 +33,10 @@ __all__ = [
     "Module",
     # Health models
     "HealthResponse",
+    # Session models
+    "ConversationMessage",
+    "InterviewProgress",
+    "InterviewSession",
+    "InterviewStatus",
+    "QuestionAsked",
 ]
