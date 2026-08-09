@@ -20,8 +20,9 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from app.models.candidate import Candidate
 from app.models.session import InterviewSession
-from app.routes.interviews import get_session_manager
+from app.routes.interviews import get_llm_service, get_session_manager
 from app.services.candidate_service import get_candidate_by_id
+from app.services.llm_service import StubLLMService
 from app.services.session_service import SessionManager
 
 # ---------------------------------------------------------------------------
@@ -48,6 +49,7 @@ def client(manager: SessionManager) -> TestClient:
     """Provide a TestClient with the SessionManager dependency overridden."""
     app = create_app()
     app.dependency_overrides[get_session_manager] = lambda: manager
+    app.dependency_overrides[get_llm_service] = lambda: StubLLMService()
     tc = TestClient(app)
     return tc
 
