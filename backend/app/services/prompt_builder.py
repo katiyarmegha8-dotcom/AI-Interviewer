@@ -13,7 +13,7 @@ to any ``LLMService.generate`` implementation.
 from __future__ import annotations
 
 from app.models.candidate import Candidate
-from app.models.curriculum import Curriculum, CurriculumDay
+from app.models.curriculum import Curriculum
 from app.models.session import InterviewSession
 
 # ---------------------------------------------------------------------------

@@ -97,6 +97,16 @@ export interface InterviewResponse {
   reply: string;
   done: boolean;
   feedback: InterviewFeedback | null;
+  progress: InterviewProgress;
+}
+
+/** Interview progress tracking returned in every response. */
+export interface InterviewProgress {
+  questionsAsked: number;
+  questionsAnswered: number;
+  curriculumDaysCovered: number;
+  currentDay: number;
+  totalDays: number;
 }
 
 // ---------------------------------------------------------------------------

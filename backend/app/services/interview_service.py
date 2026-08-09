@@ -7,14 +7,26 @@ When none is provided, a placeholder reply is returned.
 
 Feedback generation follows the same pattern — the feedback prompt
 builder constructs the prompt and the LLM produces structured feedback.
+
+Interview structure requirements:
+- At least 8 primary questions must be asked.
+- At least 4 distinct curriculum days must be covered.
+- The prompt builder instructs the LLM about these thresholds.
+- The backend tracks progress and includes it in every response.
+- The backend prevents continuing a completed session.
 """
 
 from __future__ import annotations
 
+from app.exceptions import SessionNotFoundError
 from app.models.candidate import Candidate
 from app.models.curriculum import Curriculum
-from app.models.interview import Feedback, InterviewResponse
-from app.models.session import InterviewSession
+from app.models.interview import (
+    Feedback,
+    InterviewProgressResponse,
+    InterviewResponse,
+)
+from app.models.session import InterviewSession, InterviewStatus
 from app.services.feedback_service import generate_feedback
 from app.services.llm_service import LLMService
 from app.services.prompt_builder import build_interview_messages
@@ -28,6 +40,21 @@ _FALLBACK_REPLY = "Thank you for your response. Let's continue."
 
 # Reply when the interview is concluded
 _INTERVIEW_DONE_REPLY = "Interview completed."
+
+# Minimum thresholds for a complete interview
+MIN_QUESTIONS = 8
+MIN_CURRICULUM_DAYS = 4
+
+
+def _build_progress(session: InterviewSession) -> InterviewProgressResponse:
+    """Build an InterviewProgressResponse from the session state."""
+    return InterviewProgressResponse(
+        questionsAsked=session.progress.questionsAsked,
+        questionsAnswered=session.progress.questionsAnswered,
+        curriculumDaysCovered=len(session.curriculumDaysCovered),
+        currentDay=session.progress.currentDay,
+        totalDays=session.progress.totalDays,
+    )
 
 
 def start_interview(
@@ -49,9 +76,13 @@ def start_interview(
     Returns:
         InterviewResponse with the welcome reply and done=False.
     """
-    manager.create_session(candidate, session_id=session_id)
+    session = manager.create_session(candidate, session_id=session_id)
     manager.add_message(session_id, "interviewer", WELCOME_REPLY)
-    return InterviewResponse(reply=WELCOME_REPLY, done=False)
+    return InterviewResponse(
+        reply=WELCOME_REPLY,
+        done=False,
+        progress=_build_progress(session),
+    )
 
 
 async def continue_interview(
@@ -63,26 +94,36 @@ async def continue_interview(
 ) -> InterviewResponse:
     """Process a follow-up turn in an existing interview.
 
-    Records the candidate's message, then either calls the LLM to
+    Records the candidate's message, then either calls the$LLM to
     generate the next interviewer reply (using the prompt builder)
     or returns a placeholder.
+
+    Raises SessionNotFoundError if the session ID is unknown.
+    Raises ValueError if the session is already completed.
 
     Args:
         session_id: Existing session identifier.
         message: The candidate's latest response.
         manager: Session manager instance.
         curriculum: Curriculum data for prompt context.
-        llm: Optional LLM service for generating replies.
+F       llm: Optional LLM service for generating replies.
 
     Returns:
         InterviewResponse with a reply and done=False.
 
     Raises:
         SessionNotFoundError: If the session ID is unknown.
+        ValueError: If the session is already completed.
         LLMServiceError: If the LLM API call fails.
     """
-    # Verify session exists
+    # Verify session exists and is still active
     session = manager.get_session(session_id)
+
+    if session.status == InterviewStatus.COMPLETED:
+        raise ValueError(
+            f"Interview session '{session_id}' is already completed. "
+            "Start a new session to continue interviewing."
+        )
 
     # Record the candidate's answer
     manager.add_message(session_id, "candidate", message)
@@ -101,7 +142,21 @@ async def continue_interview(
 
     # Record the interviewer's reply in session history
     manager.add_message(session_id, "interviewer", reply)
-    return InterviewResponse(reply=reply, done=False)
+
+    # Track this as a question asked (each interviewer turn is a question)
+    # Determine the curriculum day from the session's current progress
+    updated_session = manager.get_session(session_id)
+    current_day = updated_session.progress.currentDay
+    manager.add_question(session_id, current_day, reply)
+
+    # Get the final session state for the response
+    final_session = manager.get_session(session_id)
+
+    return InterviewResponse(
+        reply=reply,
+        done=False,
+        progress=_build_progress(final_session),
+    )
 
 
 async def end_interview(
@@ -130,6 +185,15 @@ async def end_interview(
         SessionNotFoundError: If the session ID is unknown.
         LLMServiceError: If the LLM API call fails.
     """
+    # Verify session exists and is still active
+    session = manager.get_session(session_id)
+
+    if session.status == InterviewStatus.COMPLETED:
+        raise ValueError(
+            f"Interview session '{session_id}' is already completed. "
+            "Start a new session to continue interviewing."
+        )
+
     # Mark session as completed (raises SessionNotFoundError if missing)
     manager.complete_session(session_id)
 
@@ -145,8 +209,12 @@ async def end_interview(
     # Record the completion message in session history
     manager.add_message(session_id, "interviewer", _INTERVIEW_DONE_REPLY)
 
+    # Get the final session state
+    final_session = manager.get_session(session_id)
+
     return InterviewResponse(
         reply=_INTERVIEW_DONE_REPLY,
         done=True,
         feedback=feedback,
+        progress=_build_progress(final_session),
     )

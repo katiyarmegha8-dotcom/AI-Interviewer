@@ -59,10 +59,36 @@ class Feedback(BaseModel):
     next: list[str] = Field(description="Recommended next steps")
 
 
+class InterviewProgressResponse(BaseModel):
+    """Interview progress information returned in every response."""
+
+    questionsAsked: int = Field(
+        default=0,
+        description="Number of primary questions asked so far",
+    )
+    questionsAnswered: int = Field(
+        default=0,
+        description="Number of candidate answers provided",
+    )
+    curriculumDaysCovered: int = Field(
+        default=0,
+        description="Number of distinct curriculum days covered",
+    )
+    currentDay: int = Field(
+        default=1,
+        description="Current curriculum day in the interview",
+    )
+    totalDays: int = Field(
+        default=31,
+        description="Total curriculum days available",
+    )
+
+
 class InterviewResponse(BaseModel):
     """Response body for POST /api/interview.
 
-    Matches the technical specification format exactly.
+    Matches the technical specification format exactly, with an additional
+    ``progress`` field for interview state tracking.
     """
 
     reply: str = Field(description="Interviewer reply text")
@@ -73,4 +99,8 @@ class InterviewResponse(BaseModel):
     feedback: Feedback | None = Field(
         default=None,
         description="Feedback summary (present only when done=true)",
+    )
+    progress: InterviewProgressResponse = Field(
+        default_factory=InterviewProgressResponse,
+        description="Interview progress tracking",
     )

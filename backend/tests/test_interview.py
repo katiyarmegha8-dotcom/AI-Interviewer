@@ -501,8 +501,8 @@ class TestResponseStructure:
             json={"sessionId": "sess-1", "candidate": sample_candidate_dict},
         )
         data = resp.json()
-        # Must have exactly reply, done, feedback keys
-        assert set(data.keys()) == {"reply", "done", "feedback"}
+        # Must have reply, done, feedback, and progress keys
+        assert set(data.keys()) == {"reply", "done", "feedback", "progress"}
 
     def test_continue_response_keys(
         self,
@@ -518,7 +518,7 @@ class TestResponseStructure:
             json={"sessionId": "sess-1", "message": "Answer"},
         )
         data = resp.json()
-        assert set(data.keys()) == {"reply", "done", "feedback"}
+        assert set(data.keys()) == {"reply", "done", "feedback", "progress"}
 
     def test_reply_is_string(
         self,

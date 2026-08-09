@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(SessionNotFoundError, _session_not_found_handler)
     app.add_exception_handler(LLMConfigurationError, _llm_configuration_handler)
     app.add_exception_handler(LLMServiceError, _llm_service_handler)
+    app.add_exception_handler(ValueError, _value_error_handler)
 
     return app
 
@@ -74,6 +75,17 @@ async def _llm_service_handler(
     """Return 502 when an LLM API call fails."""
     return JSONResponse(
         status_code=502,
+        content={"detail": str(exc)},
+    )
+
+
+async def _value_error_handler(
+    request: Request,
+    exc: ValueError,
+) -> JSONResponse:
+    """Return 409 for invalid state transitions (e.g. continuing a completed session)."""
+    return JSONResponse(
+        status_code=409,
         content={"detail": str(exc)},
     )
 
