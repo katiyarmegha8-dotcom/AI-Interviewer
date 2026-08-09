@@ -41,3 +41,19 @@ class SessionNotFoundError(Exception):
     def __init__(self, session_id: str) -> None:
         self.session_id = session_id
         super().__init__(f"Session not found: {session_id}")
+
+
+class LLMConfigurationError(Exception):
+    """Raised when the LLM service is misconfigured (e.g. missing API key)."""
+
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+        super().__init__(f"LLM configuration error: {detail}")
+
+
+class LLMServiceError(Exception):
+    """Raised when an LLM API call fails."""
+
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+        super().__init__(f"LLM service error: {detail}")

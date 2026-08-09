@@ -1,8 +1,8 @@
 """Interview orchestration service.
 
 Handles the business logic for starting and continuing interviews.
-LLM-based question generation and adaptive interviewing are later
-milestones — this service provides the structural flow only.
+When an LLM service is provided, follow-up turns generate replies via
+the LLM.  When none is provided, a placeholder reply is returned.
 """
 
 from __future__ import annotations
@@ -10,13 +10,14 @@ from __future__ import annotations
 from app.models.candidate import Candidate
 from app.models.interview import Feedback, InterviewResponse
 from app.models.session import InterviewSession
+from app.services.llm_service import LLMService
 from app.services.session_service import SessionManager
 
 # Default welcome reply from the technical specification
 WELCOME_REPLY = "Welcome. Let's begin your interview."
 
-# Placeholder reply for follow-up turns (LLM integration is a later milestone)
-CONTINUE_REPLY = "Thank you for your response. Let's continue."
+# Fallback reply when no LLM service is available
+_FALLBACK_REPLY = "Thank you for your response. Let's continue."
 
 
 def start_interview(
@@ -43,34 +44,50 @@ def start_interview(
     return InterviewResponse(reply=WELCOME_REPLY, done=False)
 
 
-def continue_interview(
+async def continue_interview(
     session_id: str,
     message: str,
     manager: SessionManager,
+    llm: LLMService | None = None,
 ) -> InterviewResponse:
     """Process a follow-up turn in an existing interview.
 
-    Records the candidate's message and answer, then returns a
-    placeholder reply.  LLM-based generation is a later milestone.
+    Records the candidate's message, then either calls the LLM to
+    generate the next interviewer reply or returns a placeholder.
 
     Args:
         session_id: Existing session identifier.
         message: The candidate's latest response.
         manager: Session manager instance.
+        llm: Optional LLM service for generating replies.
 
     Returns:
         InterviewResponse with a reply and done=False.
 
     Raises:
         SessionNotFoundError: If the session ID is unknown.
+        LLMServiceError: If the LLM API call fails.
     """
-    # get_session will raise SessionNotFoundError if not found
+    # Verify session exists
     session = manager.get_session(session_id)
 
     # Record the candidate's answer
     manager.add_message(session_id, "candidate", message)
     manager.record_answer(session_id)
 
-    # Return a placeholder interviewer reply (LLM integration later)
-    manager.add_message(session_id, "interviewer", CONTINUE_REPLY)
-    return InterviewResponse(reply=CONTINUE_REPLY, done=False)
+    # Generate the interviewer reply
+    if llm is not None:
+        # Build the conversation messages for the LLM from session history
+        # (which now includes the candidate's latest message)
+        updated_session = manager.get_session(session_id)
+        llm_messages = [
+            {"role": m.role, "content": m.content}
+            for m in updated_session.history
+        ]
+        reply = await llm.generate(llm_messages)
+    else:
+        reply = _FALLBACK_REPLY
+
+    # Record the interviewer's reply in session history
+    manager.add_message(session_id, "interviewer", reply)
+    return InterviewResponse(reply=reply, done=False)
