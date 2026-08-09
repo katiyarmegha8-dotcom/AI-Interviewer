@@ -8,7 +8,8 @@ from app.exceptions import SessionNotFoundError
 from app.models.interview import InterviewRequest, InterviewResponse
 from app.services.curriculum_service import get_curriculum
 from app.services.interview_service import continue_interview, end_interview, start_interview
-from app.services.llm_service import LLMService, StubLLMService
+from app.config import settings
+from app.services.llm_service import LLMService, OpenAIService, StubLLMService
 from app.services.session_service import SessionManager
 
 router = APIRouter(tags=["interview"])
@@ -21,9 +22,10 @@ router = APIRouter(tags=["interview"])
 _session_manager = SessionManager()
 
 # StubLLMService is used by default so the app starts without an API key.
-# When OPENAI_API_KEY is configured, callers should override this
-# dependency with an OpenAIService instance.
-_llm_service: LLMService = StubLLMService()
+# When OPENAI_API_KEY is configured, OpenAIService is used instead.
+_llm_service: LLMService = (
+    OpenAIService() if settings.openai_api_key else StubLLMService()
+)
 
 
 def get_session_manager() -> SessionManager:
