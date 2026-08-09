@@ -184,3 +184,197 @@ The workflow followed an iterative AI-assisted development process:
 **Prompt → AI-generated implementation → Human review → Local testing → Git commit → GitHub push**
 
 This kept the developer responsible for reviewing the generated code and verifying the resulting application rather than treating the AI output as automatically correct.
+
+
+## Prompt 4 — Data Models & Services
+
+Implement the backend data layer for the AI Interview Agent using the provided hackathon data and technical specification.
+
+Requirements:
+
+* Add the required backend data files under `backend/data/`.
+* Create Pydantic models for the curriculum and candidate data.
+* Add:
+
+  * `backend/app/models/curriculum.py`
+  * `backend/app/models/candidate.py`
+* Implement reusable JSON loading and validation services.
+* Add appropriate custom exceptions for missing or invalid data files.
+* Implement services for:
+
+  * retrieving curriculum information
+  * retrieving a candidate by candidate ID
+* Keep the data layer modular and independent from API routes.
+* Follow the existing FastAPI project architecture and type-safe Python conventions.
+* Add unit tests covering the models, JSON loading, candidate lookup, curriculum retrieval, and error cases.
+* Do not hardcode candidate or curriculum information that should come from the provided JSON data.
+
+
+---
+
+## Prompt 4 — Curriculum and Candidate Data Loaders
+
+### AI Tool
+
+Cursor Agent
+
+### Prompt
+
+Load `curriculum.json` and `candidate_profiles.json`.
+
+Create reusable services that:
+
+- Read JSON files
+- Validate data
+- Return curriculum
+- Return candidate by ID
+
+Use clean Python architecture.
+
+### AI Response / Output
+
+Cursor implemented reusable backend data-loading services for the
+curriculum and candidate profile data.
+
+The implementation included:
+
+- JSON file loading for `curriculum.json`
+- JSON file loading for `candidate_profiles.json`
+- Data validation using the project's Pydantic models
+- A service for retrieving the curriculum
+- A service for retrieving a candidate by ID
+- Appropriate error handling for missing or invalid data
+- Clean separation between data loading and the rest of the application
+
+### Where It Was Used
+
+The data loader services were integrated into the backend so that
+curriculum and candidate profile data could be accessed through
+reusable service-layer functionality.
+
+These services provide the data required by later interview and
+candidate-related features.
+
+### Human Review
+
+The generated implementation was reviewed using Cursor's Changes panel
+and Git diff.
+
+The JSON loading logic, validation, service structure, file paths and
+error handling were checked to ensure they followed the existing
+backend architecture.
+
+The implementation was then tested and committed to Git.
+
+### Commit
+
+`Implement curriculum and candidate data loaders`
+
+---
+
+
+---
+
+## Prompt 5 — Session Management
+
+### AI Tool
+
+Cursor Agent
+
+### Prompt
+
+Implement interview session management.
+
+Requirements:
+
+- Use sessionId
+- Store conversation history
+- Store questions asked
+- Store curriculum days covered
+- Store candidate profile
+- Store interview progress
+
+Use an in-memory session manager.
+
+Keep code modular.
+
+### AI Response / Output
+
+Cursor implemented an in-memory interview session management system.
+
+The implementation included:
+
+- Unique `sessionId` based session handling
+- Storage for conversation history
+- Tracking of questions asked during the interview
+- Tracking of curriculum days covered
+- Storage of the candidate profile associated with the session
+- Tracking of interview progress
+- Session creation and retrieval functionality
+- Modular session management service structure
+
+The session manager was designed to keep interview state available
+throughout an active interview without requiring persistent database
+storage.
+
+### Where It Was Used
+
+The session management system was integrated into the backend interview
+flow to maintain state across multiple interactions within an
+interview session.
+
+It provides the foundation for maintaining conversation context,
+candidate information and interview progress in later milestones.
+
+### Human Review
+
+The generated implementation was reviewed using Cursor's Changes panel
+and Git diff.
+
+The session model, stored fields, session ID handling, in-memory
+storage and service structure were checked to ensure the implementation
+matched the milestone requirements and existing backend architecture.
+
+The implementation was then tested and committed to Git.
+
+### Commit
+
+`Add interview session management`
+
+---
+
+## Prompt 6 — API Endpoint
+
+### AI Tool
+
+Cursor Agent
+
+### Prompt
+
+Implement the POST /api/interview endpoint according to the provided technical specification.
+
+Requirements:
+
+- Accept the request body exactly as specified.
+- Handle the first request differently from follow-up requests.
+- Validate input.
+- Return the response in the required format.
+- Keep interview state using sessionId.
+
+Before making changes:
+- Inspect the existing backend architecture and the implementations from previous milestones.
+- Reuse the existing models, services, session management, and exception handling where appropriate.
+- Do not introduce unnecessary architectural changes.
+- Keep the implementation modular and consistent with the existing project structure.
+
+Implement the endpoint and update any related service/model files only when required.
+
+After implementation:
+- Run the existing test suite.
+- Add or update tests for the new API endpoint and its validation/state-handling behavior.
+- Ensure all existing tests continue to pass.
+- Do not modify unrelated functionality.
+
+### Commit
+
+Implement interview API endpoint
