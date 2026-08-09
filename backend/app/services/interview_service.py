@@ -1,9 +1,12 @@
 """Interview orchestration service.
 
-Handles the business logic for starting and continuing interviews.
+Handles the business logic for starting, continuing, and ending interviews.
 When an LLM service is provided, follow-up turns generate replies via
 the LLM using a structured prompt built by the prompt builder.
 When none is provided, a placeholder reply is returned.
+
+Feedback generation follows the same pattern — the feedback prompt
+builder constructs the prompt and the LLM produces structured feedback.
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ from app.models.candidate import Candidate
 from app.models.curriculum import Curriculum
 from app.models.interview import Feedback, InterviewResponse
 from app.models.session import InterviewSession
+from app.services.feedback_service import generate_feedback
 from app.services.llm_service import LLMService
 from app.services.prompt_builder import build_interview_messages
 from app.services.session_service import SessionManager
@@ -21,6 +25,9 @@ WELCOME_REPLY = "Welcome. Let's begin your interview."
 
 # Fallback reply when no LLM service is available
 _FALLBACK_REPLY = "Thank you for your response. Let's continue."
+
+# Reply when the interview is concluded
+_INTERVIEW_DONE_REPLY = "Interview completed."
 
 
 def start_interview(
@@ -95,3 +102,52 @@ async def continue_interview(
     # Record the interviewer's reply in session history
     manager.add_message(session_id, "interviewer", reply)
     return InterviewResponse(reply=reply, done=False)
+
+
+async def end_interview(
+    session_id: str,
+    manager: SessionManager,
+    curriculum: Curriculum,
+    llm: LLMService | None = None,
+) -> InterviewResponse:
+    """End an interview and generate structured feedback.
+
+    Marks the session as completed, generates feedback using the
+    feedback service, and returns the spec-compliant response with
+    ``done=True``.
+
+    Args:
+        session_id: Existing session identifier.
+        manager: Session manager instance.
+        curriculum: Curriculum data for feedback context.
+        llm: Optional LLM service for generating feedback.
+
+    Returns:
+        InterviewResponse with the completion reply, done=True,
+        and structured feedback.
+
+    Raises:
+        SessionNotFoundError: If the session ID is unknown.
+        LLMServiceError: If the LLM API call fails.
+    """
+    # Verify session exists and mark as completed
+    manager.get_session(session_id)
+    manager.complete_session(session_id)
+
+    # Get the completed session for feedback generation
+    completed_session = manager.get_session(session_id)
+
+    # Generate structured feedback
+    detailed = await generate_feedback(completed_session, curriculum, llm=llm)
+
+    # Convert to API-level Feedback model
+    feedback = detailed.to_api_feedback()
+
+    # Record the completion message in session history
+    manager.add_message(session_id, "interviewer", _INTERVIEW_DONE_REPLY)
+
+    return InterviewResponse(
+        reply=_INTERVIEW_DONE_REPLY,
+        done=True,
+        feedback=feedback,
+    )

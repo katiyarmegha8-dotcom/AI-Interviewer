@@ -7,6 +7,7 @@ from app.models.candidate import (
 )
 from app.models.common import ErrorResponse, MessageResponse
 from app.models.curriculum import Curriculum, CurriculumDay, DayType, Module
+from app.models.feedback import DetailedFeedback
 from app.models.health import HealthResponse
 from app.models.interview import Feedback, InterviewRequest, InterviewResponse
 from app.models.session import (
@@ -32,6 +33,8 @@ __all__ = [
     "CurriculumDay",
     "DayType",
     "Module",
+    # Feedback models
+    "DetailedFeedback",
     # Health models
     "HealthResponse",
     # Interview models

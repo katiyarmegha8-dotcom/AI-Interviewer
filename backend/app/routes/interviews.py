@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from app.exceptions import SessionNotFoundError
 from app.models.interview import InterviewRequest, InterviewResponse
 from app.services.curriculum_service import get_curriculum
-from app.services.interview_service import continue_interview, start_interview
+from app.services.interview_service import continue_interview, end_interview, start_interview
 from app.services.llm_service import LLMService, StubLLMService
 from app.services.session_service import SessionManager
 
@@ -47,9 +47,10 @@ async def interview_endpoint(
     manager: SessionManager = Depends(get_session_manager),
     llm: LLMService = Depends(get_llm_service),
 ) -> InterviewResponse:
-    """Handle interview start and continuation requests.
+    """Handle interview start, continuation, and end requests.
 
     - If ``candidate`` is present → start a new session.
+    - If ``done`` is true → end the session and generate feedback.
     - If ``message`` is present → continue an existing session.
 
     The distinction is enforced by ``InterviewRequest`` validation.
@@ -61,6 +62,14 @@ async def interview_endpoint(
             session_id=request.sessionId,
             candidate=request.candidate,
             manager=manager,
+        )
+
+    if request.done is True:
+        return await end_interview(
+            session_id=request.sessionId,
+            manager=manager,
+            curriculum=curriculum,
+            llm=llm,
         )
 
     # message is guaranteed present by the model validator

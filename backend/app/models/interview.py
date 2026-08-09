@@ -13,11 +13,12 @@ from app.models.candidate import Candidate
 class InterviewRequest(BaseModel):
     """Request body for POST /api/interview.
 
-    Two mutually exclusive shapes:
-      - Start interview:  sessionId + candidate (no message)
-      - Conversation turn: sessionId + message   (no candidate)
+    Three shapes:
+      - Start interview:  sessionId + candidate (no message, no done)
+      - Conversation turn: sessionId + message   (no candidate, no done)
+      - End interview:     sessionId + done=true (no candidate, no message)
 
-    At least one of ``candidate`` or ``message`` must be provided.
+    At least one of ``candidate``, ``message``, or ``done`` must be provided.
     """
 
     sessionId: str = Field(description="Unique interview session identifier")
@@ -29,15 +30,20 @@ class InterviewRequest(BaseModel):
         default=None,
         description="Candidate's latest response (required for a follow-up turn)",
     )
+    done: bool | None = Field(
+        default=None,
+        description="Set to true to end the interview and generate feedback",
+    )
 
     @model_validator(mode="after")
     def check_start_or_continue(self) -> InterviewRequest:
         has_candidate = self.candidate is not None
         has_message = self.message is not None
-        if not has_candidate and not has_message:
+        has_done = self.done is not None
+        if not has_candidate and not has_message and not has_done:
             raise ValueError(
-                "Request must include either 'candidate' to start a session "
-                "or 'message' to continue an existing session."
+                "Request must include either 'candidate' to start a session, "
+                "'message' to continue an existing session, or 'done' to end it."
             )
         return self
 
