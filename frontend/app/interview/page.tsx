@@ -19,16 +19,18 @@ export default function InterviewPage() {
   } = useInterviewChat();
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-8rem)] w-full max-w-3xl flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+    <div className="mx-auto flex h-[calc(100dvh-5rem)] w-full max-w-3xl flex-col px-3 py-3 sm:h-[calc(100dvh-6rem)] sm:px-5 sm:py-4 lg:px-8">
       {/* Header */}
-      <div className="mb-3 flex-shrink-0 sm:mb-4">
-        <h1 className="text-xl font-bold tracking-tight text-content sm:text-2xl">
+      <div className="mb-2 flex-shrink-0 sm:mb-3">
+        <h1 className="text-lg font-bold tracking-tight text-content sm:text-xl">
           Interview
         </h1>
-        <p className="mt-1 text-xs text-content-muted sm:text-sm">
+        <p className="mt-0.5 text-xs leading-relaxed text-content-muted sm:text-sm">
           {isInterviewDone
-            ? "Interview completed — see your feedback below."
-            : "Respond to the AI interviewer\u2019s questions below."}
+            ? "Interview completed — review your feedback below."
+            : isStarting
+              ? "Connecting to the interviewer…"
+              : "Answer the interviewer\u2019s questions to practice your skills."}
         </p>
       </div>
 
