@@ -2,15 +2,18 @@
 
 Handles the business logic for starting and continuing interviews.
 When an LLM service is provided, follow-up turns generate replies via
-the LLM.  When none is provided, a placeholder reply is returned.
+the LLM using a structured prompt built by the prompt builder.
+When none is provided, a placeholder reply is returned.
 """
 
 from __future__ import annotations
 
 from app.models.candidate import Candidate
+from app.models.curriculum import Curriculum
 from app.models.interview import Feedback, InterviewResponse
 from app.models.session import InterviewSession
 from app.services.llm_service import LLMService
+from app.services.prompt_builder import build_interview_messages
 from app.services.session_service import SessionManager
 
 # Default welcome reply from the technical specification
@@ -48,17 +51,20 @@ async def continue_interview(
     session_id: str,
     message: str,
     manager: SessionManager,
+    curriculum: Curriculum,
     llm: LLMService | None = None,
 ) -> InterviewResponse:
     """Process a follow-up turn in an existing interview.
 
     Records the candidate's message, then either calls the LLM to
-    generate the next interviewer reply or returns a placeholder.
+    generate the next interviewer reply (using the prompt builder)
+    or returns a placeholder.
 
     Args:
         session_id: Existing session identifier.
         message: The candidate's latest response.
         manager: Session manager instance.
+        curriculum: Curriculum data for prompt context.
         llm: Optional LLM service for generating replies.
 
     Returns:
@@ -77,13 +83,11 @@ async def continue_interview(
 
     # Generate the interviewer reply
     if llm is not None:
-        # Build the conversation messages for the LLM from session history
-        # (which now includes the candidate's latest message)
+        # Get the updated session (includes candidate's latest message)
         updated_session = manager.get_session(session_id)
-        llm_messages = [
-            {"role": m.role, "content": m.content}
-            for m in updated_session.history
-        ]
+
+        # Build structured messages using the prompt builder
+        llm_messages = build_interview_messages(updated_session, curriculum)
         reply = await llm.generate(llm_messages)
     else:
         reply = _FALLBACK_REPLY

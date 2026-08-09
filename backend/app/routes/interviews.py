@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 
 from app.exceptions import SessionNotFoundError
 from app.models.interview import InterviewRequest, InterviewResponse
+from app.services.curriculum_service import get_curriculum
 from app.services.interview_service import continue_interview, start_interview
 from app.services.llm_service import LLMService, StubLLMService
 from app.services.session_service import SessionManager
@@ -53,6 +54,8 @@ async def interview_endpoint(
 
     The distinction is enforced by ``InterviewRequest`` validation.
     """
+    curriculum = get_curriculum()
+
     if request.candidate is not None:
         return start_interview(
             session_id=request.sessionId,
@@ -65,5 +68,6 @@ async def interview_endpoint(
         session_id=request.sessionId,
         message=request.message,  # type: ignore[arg-type]
         manager=manager,
+        curriculum=curriculum,
         llm=llm,
     )

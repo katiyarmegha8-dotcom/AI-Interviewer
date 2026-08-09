@@ -5,9 +5,11 @@ from app.services.curriculum_service import get_curriculum
 from app.services.data_loader import load_and_validate
 from app.services.interview_service import continue_interview, start_interview
 from app.services.llm_service import LLMMessage, LLMService, OpenAIService, StubLLMService
+from app.services.prompt_builder import build_interview_messages
 from app.services.session_service import SessionManager
 
 __all__ = [
+    "build_interview_messages",
     "continue_interview",
     "get_candidate_by_id",
     "get_candidates",
