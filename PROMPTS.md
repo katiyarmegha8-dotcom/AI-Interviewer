@@ -454,3 +454,109 @@ The generated implementation was reviewed, tested and then integrated into the m
 The workflow followed:
 
 **Prompt → Repository inspection → AI-generated implementation → Human review → Automated testing → Git commit → Merge → GitHub push**
+
+
+
+## Prompt 7 — LLM Integration
+
+### AI Tool
+
+Arena Agent
+
+### Prompt
+
+Implement LLM integration for the existing AI Interviewer backend.
+
+Requirements:
+
+- Integrate an LLM provider into the FastAPI backend
+- Use OpenAI as the primary provider
+- Keep the LLM implementation structured so another provider can be substituted later
+- Create a reusable LLM service
+- Read the API key from environment variables/configuration
+- Never hardcode API keys or secrets
+- Do not hardcode interview prompts inside the LLM service
+- Accept prompts/messages as input to the LLM service
+- Isolate provider-specific API logic inside the LLM service
+- Reuse the existing configuration architecture
+- Integrate the LLM service with the existing interview service/API
+- Preserve the existing sessionId-based interview state management
+- Handle missing API keys and LLM/API errors cleanly
+- Add automated mock-based tests without making real LLM API calls
+- Ensure all existing tests continue to pass
+- Do not implement functionality belonging to later milestones
+
+### AI Response / Output
+
+Arena Agent inspected the existing FastAPI architecture and implemented the LLM integration.
+
+The implementation included:
+
+- Added `backend/app/services/llm_service.py`
+- Added `backend/tests/test_llm_service.py`
+- Updated `backend/app/config.py`
+- Updated `backend/app/exceptions.py`
+- Updated `backend/app/main.py`
+- Updated `backend/app/routes/interviews.py`
+- Updated `backend/app/services/interview_service.py`
+- Updated `backend/app/services/__init__.py`
+- Updated `backend/.env.example`
+- Updated `backend/requirements.txt`
+- Updated `backend/tests/test_interview.py`
+
+The implementation introduced:
+
+- `LLMService` as an abstract provider interface
+- `OpenAIService` for OpenAI integration
+- `StubLLMService` for operation without a real API key
+- Environment-based OpenAI configuration
+- LLM-specific error handling
+- Dependency injection for the LLM service
+- Mock-based tests with no real API calls
+
+### Where It Was Used
+
+The LLM service is integrated into the existing interview flow.
+
+The interview service converts the existing session conversation history into LLM messages and uses the configured LLM service to generate interview responses.
+
+The session management and `sessionId`-based interview state from the previous implementation were preserved.
+
+### Human Review
+
+The generated implementation was reviewed against the Milestone 7 requirements and the existing project architecture.
+
+The final review verified that:
+
+- No `.env` file was added to the repository
+- No real API key was present
+- `OPENAI_API_KEY` remains empty in `.env.example`
+- No real LLM API calls are made by automated tests
+- Provider-specific OpenAI logic is isolated
+- No prompts are hardcoded inside the LLM service
+- Existing functionality remains intact
+
+The complete backend test suite was executed after resolving the merge conflicts.
+
+**126/126 tests passed successfully.**
+
+The implementation was committed with:
+
+`6de0506 feat: integrate LLM service`
+
+It was then merged into `main` with:
+
+`f7621ba feat: merge milestone 7 LLM integration`
+
+The merged changes were pushed to the GitHub `main` branch.
+
+### Vibe Coding Workflow
+
+Arena Agent was used to inspect the existing architecture and generate the LLM integration from the defined requirements.
+
+The generated implementation was reviewed for security, architecture, scope and test coverage before being accepted.
+
+The workflow followed:
+
+**Prompt → Repository inspection → AI-generated implementation → Human review → Automated testing → Git commit → Merge conflict resolution → Re-testing → Merge → GitHub push**
+
