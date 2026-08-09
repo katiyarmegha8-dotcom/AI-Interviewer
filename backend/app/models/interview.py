@@ -39,11 +39,13 @@ class InterviewRequest(BaseModel):
     def check_start_or_continue(self) -> InterviewRequest:
         has_candidate = self.candidate is not None
         has_message = self.message is not None
-        has_done = self.done is not None
-        if not has_candidate and not has_message and not has_done:
+        # Only done=True is a valid end-interview request on its own.
+        # done=False without message/candidate is ambiguous and rejected.
+        is_end = self.done is True
+        if not has_candidate and not has_message and not is_end:
             raise ValueError(
                 "Request must include either 'candidate' to start a session, "
-                "'message' to continue an existing session, or 'done' to end it."
+                "'message' to continue an existing session, or 'done'=true to end it."
             )
         return self
 

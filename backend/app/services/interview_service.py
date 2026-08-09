@@ -130,8 +130,7 @@ async def end_interview(
         SessionNotFoundError: If the session ID is unknown.
         LLMServiceError: If the LLM API call fails.
     """
-    # Verify session exists and mark as completed
-    manager.get_session(session_id)
+    # Mark session as completed (raises SessionNotFoundError if missing)
     manager.complete_session(session_id)
 
     # Get the completed session for feedback generation

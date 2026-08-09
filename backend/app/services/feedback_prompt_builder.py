@@ -8,9 +8,9 @@ that can be passed directly to any ``LLMService.generate`` implementation.
 
 from __future__ import annotations
 
-from app.models.candidate import Candidate
 from app.models.curriculum import Curriculum
 from app.models.session import InterviewSession
+from app.services.prompt_builder import _build_candidate_profile
 
 # ---------------------------------------------------------------------------
 # System prompt for feedback generation
@@ -44,40 +44,6 @@ Rules:
 # ---------------------------------------------------------------------------
 # Context builders
 # ---------------------------------------------------------------------------
-
-
-def _build_candidate_context(candidate: Candidate) -> str:
-    """Build a text block describing the candidate for feedback context."""
-    m = candidate.member
-    lines = [
-        f"Name: {m.name}",
-        f"Role: {m.jobRole}",
-        f"Experience: {m.yearsExperience} years",
-        f"Education: {m.education}",
-    ]
-
-    # Mission summary
-    passed = [mi for mi in candidate.missions if mi.passed is True]
-    failed = [mi for mi in candidate.missions if mi.passed is False]
-    skipped = [mi for mi in candidate.missions if mi.skipped is True]
-
-    if passed:
-        titles = ", ".join(mi.title for mi in passed)
-        lines.append(f"Missions passed: {titles}")
-    if failed:
-        titles = ", ".join(mi.title for mi in failed)
-        lines.append(f"Missions failed: {titles}")
-    if skipped:
-        titles = ", ".join(mi.title for mi in skipped)
-        lines.append(f"Missions skipped: {titles}")
-
-    lines.append(
-        f"Engagement signals: {candidate.signals.commitDays} commit days, "
-        f"{candidate.signals.missionsCompleted} missions completed, "
-        f"{candidate.signals.missionsFirstTry} first-try passes"
-    )
-
-    return "\n".join(lines)
 
 
 def _build_interview_summary(session: InterviewSession) -> str:
@@ -142,7 +108,7 @@ def build_feedback_messages(
         A list of ``{"role": ..., "content": ...}`` dicts ready for
         ``LLMService.generate``.
     """
-    candidate_block = _build_candidate_context(session.candidate)
+    candidate_block = _build_candidate_profile(session.candidate)
     summary_block = _build_interview_summary(session)
     history_block = _build_conversation_history(session)
     curriculum_block = _build_curriculum_summary(curriculum)

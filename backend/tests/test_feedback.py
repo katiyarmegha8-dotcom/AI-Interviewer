@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from app.models.candidate import Candidate, CandidateMember, Mission, Signals
+from app.models.candidate import Candidate
 from app.models.curriculum import Curriculum
 from app.models.feedback import DetailedFeedback
 from app.models.interview import Feedback
@@ -31,13 +31,13 @@ from app.models.session import InterviewSession
 from app.services.candidate_service import get_candidate_by_id
 from app.services.curriculum_service import get_curriculum
 from app.services.feedback_prompt_builder import (
-    _build_candidate_context,
     _build_conversation_history,
     _build_curriculum_summary,
     _build_interview_summary,
     _FEEDBACK_SYSTEM_PROMPT,
     build_feedback_messages,
 )
+from app.services.prompt_builder import _build_candidate_profile
 from app.services.feedback_service import (
     _DEFAULT_FEEDBACK,
     _parse_feedback_json,
@@ -198,31 +198,31 @@ class TestFeedbackSystemPrompt:
 # ===========================================================================
 
 
-class TestCandidateContext:
-    """Tests for _build_candidate_context."""
+class TestCandidateProfile:
+    """Tests for _build_candidate_profile."""
 
     def test_includes_name(self, candidate: Candidate) -> None:
-        ctx = _build_candidate_context(candidate)
+        ctx = _build_candidate_profile(candidate)
         assert "Sarah Johnson" in ctx
 
     def test_includes_role(self, candidate: Candidate) -> None:
-        ctx = _build_candidate_context(candidate)
+        ctx = _build_candidate_profile(candidate)
         assert "Senior Data Engineer" in ctx
 
     def test_includes_experience(self, candidate: Candidate) -> None:
-        ctx = _build_candidate_context(candidate)
+        ctx = _build_candidate_profile(candidate)
         assert "9 years" in ctx
 
     def test_includes_signals(self, candidate: Candidate) -> None:
-        ctx = _build_candidate_context(candidate)
+        ctx = _build_candidate_profile(candidate)
         assert "commit days" in ctx
         assert "missions completed" in ctx
 
     def test_different_candidate_different_context(
         self, candidate: Candidate, candidate2: Candidate
     ) -> None:
-        ctx1 = _build_candidate_context(candidate)
-        ctx2 = _build_candidate_context(candidate2)
+        ctx1 = _build_candidate_profile(candidate)
+        ctx2 = _build_candidate_profile(candidate2)
         assert ctx1 != ctx2
         assert "Sarah Johnson" in ctx1
         assert "Alex Turner" in ctx2
@@ -715,3 +715,135 @@ class TestEndInterviewIntegration:
         assert "Python" in resp.feedback.strengths
         assert "Rust" in resp.feedback.gaps
         assert "Advanced SQL" in resp.feedback.next
+
+
+# ===========================================================================
+# API-level tests: done=true and done=false via HTTP
+# ===========================================================================
+
+
+class TestDoneTrueViaAPI:
+    """API-level tests for POST /api/interview with done=true."""
+
+    @pytest.fixture
+    def client(self):
+        from fastapi.testclient import TestClient
+        from app.main import app
+        from app.routes.interviews import get_session_manager, get_llm_service
+        from app.services.session_service import SessionManager
+
+        fresh_manager = SessionManager()
+        app.dependency_overrides[get_session_manager] = lambda: fresh_manager
+        app.dependency_overrides[get_llm_service] = lambda: StubLLMService()
+        yield TestClient(app)
+        app.dependency_overrides.clear()
+
+    def _make_candidate_body(self) -> dict:
+        return {
+            "member": {
+                "id": "CAND-001",
+                "name": "Sarah Johnson",
+                "jobRole": "Senior Data Engineer",
+                "yearsExperience": 9,
+                "education": "MS Computer Science",
+                "status": "COMPLETED",
+            },
+            "missions": [],
+            "signals": {"commitDays": 45, "missionsCompleted": 12, "missionsFirstTry": 8},
+        }
+
+    def test_done_true_returns_200(self, client) -> None:
+        # Start session first
+        client.post("/api/interview", json={
+            "sessionId": "api-end-1",
+            "candidate": self._make_candidate_body(),
+        })
+        # End with done=true
+        resp = client.post("/api/interview", json={
+            "sessionId": "api-end-1",
+            "done": True,
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["done"] is True
+        assert data["reply"] == "Interview completed."
+        assert data["feedback"] is not None
+
+    def test_done_true_feedback_has_required_fields(self, client) -> None:
+        client.post("/api/interview", json={
+            "sessionId": "api-end-2",
+            "candidate": self._make_candidate_body(),
+        })
+        resp = client.post("/api/interview", json={
+            "sessionId": "api-end-2",
+            "done": True,
+        })
+        data = resp.json()
+        fb = data["feedback"]
+        assert "summary" in fb
+        assert "strengths" in fb
+        assert "gaps" in fb
+        assert "next" in fb
+        assert isinstance(fb["summary"], str)
+        assert isinstance(fb["strengths"], list)
+        assert isinstance(fb["gaps"], list)
+        assert isinstance(fb["next"], list)
+
+    def test_done_true_unknown_session_returns_404(self, client) -> None:
+        resp = client.post("/api/interview", json={
+            "sessionId": "nonexistent",
+            "done": True,
+        })
+        assert resp.status_code == 404
+
+
+class TestDoneFalseValidationViaAPI:
+    """Regression tests: done=false without message/candidate must return 422."""
+
+    @pytest.fixture
+    def client(self):
+        from fastapi.testclient import TestClient
+        from app.main import app
+        from app.routes.interviews import get_session_manager, get_llm_service
+        from app.services.session_service import SessionManager
+
+        fresh_manager = SessionManager()
+        app.dependency_overrides[get_session_manager] = lambda: fresh_manager
+        app.dependency_overrides[get_llm_service] = lambda: StubLLMService()
+        yield TestClient(app)
+        app.dependency_overrides.clear()
+
+    def test_done_false_without_message_returns_422(self, client) -> None:
+        """done=false alone is not a valid request shape."""
+        resp = client.post("/api/interview", json={
+            "sessionId": "some-session",
+            "done": False,
+        })
+        assert resp.status_code == 422
+
+    def test_done_false_with_message_returns_200(self, client) -> None:
+        """done=false + message is valid (continue interview)."""
+        # Start session first
+        client.post("/api/interview", json={
+            "sessionId": "api-cont-1",
+            "candidate": {
+                "member": {
+                    "id": "CAND-001",
+                    "name": "Sarah Johnson",
+                    "jobRole": "Senior Data Engineer",
+                    "yearsExperience": 9,
+                    "education": "MS Computer Science",
+                    "status": "COMPLETED",
+                },
+                "missions": [],
+                "signals": {"commitDays": 45, "missionsCompleted": 12, "missionsFirstTry": 8},
+            },
+        })
+        resp = client.post("/api/interview", json={
+            "sessionId": "api-cont-1",
+            "done": False,
+            "message": "I know Python",
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["done"] is False
