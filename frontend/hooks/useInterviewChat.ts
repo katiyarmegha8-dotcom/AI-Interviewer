@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 import type {
   ChatMessage,
@@ -121,6 +121,9 @@ export function useInterviewChat(): UseInterviewChatReturn {
 
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
 
+  /** Whether the component is still mounted — guards async state updates after unmount. */
+  const isMountedRef = useRef(true);
+
   /** Scroll the conversation to the bottom. */
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -166,10 +169,12 @@ export function useInterviewChat(): UseInterviewChatReturn {
           sessionId: sid,
           candidate: DEFAULT_CANDIDATE,
         });
+        if (!isMountedRef.current) return;
         setIsStarting(false);
         setIsAiTyping(false);
         addMessage("ai", response.reply);
       } catch (err) {
+        if (!isMountedRef.current) return;
         handleError(err);
       }
     },
@@ -192,6 +197,7 @@ export function useInterviewChat(): UseInterviewChatReturn {
       // Send to the backend.
       interviewApi({ sessionId, message: content })
         .then((response) => {
+          if (!isMountedRef.current) return;
           setIsAiTyping(false);
 
           if (response.done) {
@@ -204,7 +210,10 @@ export function useInterviewChat(): UseInterviewChatReturn {
             addMessage("ai", response.reply);
           }
         })
-        .catch(handleError);
+        .catch((err) => {
+          if (!isMountedRef.current) return;
+          handleError(err);
+        });
     },
     [sessionId, isInterviewDone, isAiTyping, addMessage, scrollToBottom, handleError],
   );
@@ -218,6 +227,7 @@ export function useInterviewChat(): UseInterviewChatReturn {
 
     interviewApi({ sessionId, done: true })
       .then((response) => {
+        if (!isMountedRef.current) return;
         setIsAiTyping(false);
         addMessage("ai", response.reply);
         setIsInterviewDone(true);
@@ -225,7 +235,10 @@ export function useInterviewChat(): UseInterviewChatReturn {
           setFeedback(response.feedback);
         }
       })
-      .catch(handleError);
+      .catch((err) => {
+        if (!isMountedRef.current) return;
+        handleError(err);
+      });
   }, [sessionId, isInterviewDone, isAiTyping, addMessage, handleError]);
 
   /** Start a brand-new interview (reset all state). */
@@ -249,13 +262,27 @@ export function useInterviewChat(): UseInterviewChatReturn {
   }, []);
 
   // On first mount, automatically start the interview.
-  // We use a ref to track whether we've already initiated.
+  // Using useEffect (not render-time) ensures state updates happen after commit,
+  // avoiding "Can't perform a React state update on a component that hasn't mounted yet."
+  // hasInitiatedRef prevents double-firing in React Strict Mode.
   const hasInitiatedRef = useRef(false);
-  if (!hasInitiatedRef.current && messages.length === 0 && !isStarting && !isAiTyping) {
-    hasInitiatedRef.current = true;
-    // Schedule the start — can't call startSession directly during render.
-    Promise.resolve().then(() => startSession(sessionId));
-  }
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    if (!hasInitiatedRef.current) {
+      hasInitiatedRef.current = true;
+      startSession(sessionId);
+    }
+
+    return () => {
+      isMountedRef.current = false;
+    };
+    // We intentionally only run this on mount. startSession and sessionId are
+    // captured at first render — re-triggering on their changes would restart
+    // the interview, which is not desired.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     messages,
